@@ -1,0 +1,22 @@
+{
+  "timestamp": "2025-12-13T15:32:05.857520",
+  "model_architecture": "ResNet50",
+  "input_shape": [
+    224,
+    224,
+    3
+  ],
+  "num_classes": 2,
+  "phase1": {
+    "epochs": 4,
+    "final_train_accuracy": 0.949999988079071,
+    "final_val_accuracy": 1.0,
+    "best_val_accuracy": 1.0
+  },
+  "phase2": {
+    "epochs": 6,
+    "final_train_accuracy": 0.800000011920929,
+    "final_val_accuracy": 1.0,
+    "best_val_accuracy": 1.0
+  }
+}

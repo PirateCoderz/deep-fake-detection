@@ -846,7 +846,7 @@ services:
     ports: ["8000:8000"]
     volumes: ["./models:/app/models"]
     environment:
-      - DATABASE_URL=postgresql://user:pass@db:5432/fakedetect
+      - DATABASE_URL=postgresql://postgres:123123@db:5432/fakedetect
       - REDIS_URL=redis://redis:6379
   
   frontend:

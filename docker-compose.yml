@@ -6,25 +6,28 @@ services:
     image: postgres:14-alpine
     container_name: fakedetect-db
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: fakedetect
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-123123}
+      POSTGRES_DB: ${POSTGRES_DB:-fakedetect}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - fakedetect-network
+    restart: unless-stopped
 
   # Redis Cache
   redis:
     image: redis:7-alpine
     container_name: fakedetect-redis
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -32,43 +35,73 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - fakedetect-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
 
-  # Backend API (commented out until implementation is ready)
-  # backend:
-  #   build:
-  #     context: ./backend
-  #     dockerfile: Dockerfile
-  #   container_name: fakedetect-backend
-  #   ports:
-  #     - "8000:8000"
-  #   environment:
-  #     - DATABASE_URL=postgresql://user:password@db:5432/fakedetect
-  #     - REDIS_URL=redis://redis:6379/0
-  #   volumes:
-  #     - ./backend:/app
-  #     - ./models:/app/models
-  #   depends_on:
-  #     db:
-  #       condition: service_healthy
-  #     redis:
-  #       condition: service_healthy
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fakedetect-backend
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-123123}@db:5432/${POSTGRES_DB:-fakedetect}
+      - REDIS_URL=redis://redis:6379/0
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+      - MODEL_PATH=/app/models/product_classifier.keras
+      - CONFIDENCE_THRESHOLD=${CONFIDENCE_THRESHOLD:-70}
+      - RATE_LIMIT_PER_HOUR=${RATE_LIMIT_PER_HOUR:-100}
+    volumes:
+      - ./models:/app/models:ro
+      - temp_uploads:/app/temp_uploads
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - fakedetect-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
-  # Frontend (commented out until implementation is ready)
-  # frontend:
-  #   build:
-  #     context: ./frontend
-  #     dockerfile: Dockerfile
-  #   container_name: fakedetect-frontend
-  #   ports:
-  #     - "3000:3000"
-  #   environment:
-  #     - REACT_APP_API_URL=http://localhost:8000
-  #   volumes:
-  #     - ./frontend:/app
-  #     - /app/node_modules
-  #   depends_on:
-  #     - backend
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: fakedetect-frontend
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    depends_on:
+      - backend
+    networks:
+      - fakedetect-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 volumes:
   postgres_data:
+    driver: local
   redis_data:
+    driver: local
+  temp_uploads:
+    driver: local
+
+networks:
+  fakedetect-network:
+    driver: bridge

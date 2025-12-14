@@ -9,14 +9,14 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
     
     # Database Configuration
-    database_url: str = "postgresql://user:password@localhost:5432/fakedetect"
+    database_url: str = "postgresql://postgres:123123@localhost:5432/fakedetect"
     database_pool_size: int = 10
     
     # Redis Configuration
     redis_url: str = "redis://localhost:6379/0"
     
     # Model Configuration
-    model_path: str = "./models/product_classifier.h5"
+    model_path: str = "./models/fake_detector_final.keras"
     model_version: str = "1.0.0"
     target_image_size: int = 224
     
