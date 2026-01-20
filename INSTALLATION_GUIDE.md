@@ -78,13 +78,29 @@ psql -U postgres -d fakedetect -c "SELECT version();"
 
 ## 🐍 Part 2: Backend Setup
 
-### Step 1: Navigate to Project Directory
+### Choose Your Setup Method
+
+**Option A: With Virtual Environment (Recommended)**
+- Isolated dependencies
+- No conflicts with other Python projects
+- Easy to clean up
+
+**Option B: Without Virtual Environment (Global Installation)**
+- Simpler setup
+- Dependencies installed system-wide
+- May conflict with other projects
+
+---
+
+### Option A: Backend Setup WITH Virtual Environment
+
+#### Step 1: Navigate to Project Directory
 
 ```cmd
 cd path\to\fake-product-detection
 ```
 
-### Step 2: Create Python Virtual Environment
+#### Step 2: Create Python Virtual Environment
 
 ```cmd
 # Create virtual environment
@@ -97,7 +113,7 @@ python -m venv .venv
 where python
 ```
 
-### Step 3: Install Backend Dependencies
+#### Step 3: Install Backend Dependencies
 
 ```cmd
 # Install all required packages
@@ -115,7 +131,7 @@ pip list
 - Redis (caching)
 - Pytest (testing)
 
-### Step 4: Configure Database Connection
+#### Step 4: Configure Database Connection
 
 Edit `backend/src/config.py` and update the database URL:
 
@@ -126,7 +142,7 @@ DATABASE_URL = "postgresql://postgres:123123@localhost:5432/fakedetect"
 
 **Format:** `postgresql://username:password@host:port/database`
 
-### Step 5: Initialize Database Schema
+#### Step 5: Initialize Database Schema
 
 ```cmd
 # Still in activated venv
@@ -139,7 +155,7 @@ alembic upgrade head
 cd ..
 ```
 
-### Step 6: Test Backend Connection
+#### Step 6: Test Backend Connection
 
 ```cmd
 # Test database connection
@@ -148,7 +164,7 @@ python scripts\utilities\test_db_connection.py
 # Should output: "✅ Database connection successful!"
 ```
 
-### Step 7: Start Backend Server
+#### Step 7: Start Backend Server
 
 **Option A: Using startup script**
 ```cmd
@@ -165,6 +181,108 @@ uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
 - Open browser: http://localhost:8000/docs
 - You should see the FastAPI Swagger documentation
 - Try the `/api/v1/health` endpoint
+
+---
+
+### Option B: Backend Setup WITHOUT Virtual Environment
+
+#### Step 1: Navigate to Project Directory
+
+```cmd
+cd path\to\fake-product-detection
+```
+
+#### Step 2: Install Backend Dependencies Globally
+
+```cmd
+# Install all required packages to your system Python
+pip install -r backend\requirements.txt
+
+# Verify installation
+pip list | findstr fastapi
+pip list | findstr tensorflow
+```
+
+**⚠️ Warning:** This installs packages globally and may:
+- Conflict with other Python projects
+- Require administrator privileges
+- Be harder to uninstall cleanly
+
+**Key packages installed:**
+- FastAPI (web framework)
+- TensorFlow (machine learning)
+- SQLAlchemy (database ORM)
+- OpenCV (image processing)
+- Redis (caching)
+- Pytest (testing)
+
+#### Step 3: Configure Database Connection
+
+Edit `backend/src/config.py` and update the database URL:
+
+```python
+# Find this line and update with your database credentials
+DATABASE_URL = "postgresql://postgres:123123@localhost:5432/fakedetect"
+```
+
+**Format:** `postgresql://username:password@host:port/database`
+
+#### Step 4: Initialize Database Schema
+
+```cmd
+cd backend
+
+# Run Alembic migrations
+alembic upgrade head
+
+# Go back to root
+cd ..
+```
+
+#### Step 5: Test Backend Connection
+
+```cmd
+# Test database connection (no venv activation needed)
+python scripts\utilities\test_db_connection.py
+
+# Should output: "✅ Database connection successful!"
+```
+
+#### Step 6: Start Backend Server
+
+**Option A: Using startup script**
+```cmd
+python scripts\utilities\run_backend.py
+```
+
+**Option B: Direct uvicorn**
+```cmd
+cd backend
+uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+**Option C: Using Python directly**
+```cmd
+python -m uvicorn backend.src.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+**Verify Backend:**
+- Open browser: http://localhost:8000/docs
+- You should see the FastAPI Swagger documentation
+- Try the `/api/v1/health` endpoint
+
+---
+
+### Comparison: With vs Without Virtual Environment
+
+| Feature | With venv | Without venv |
+|---------|-----------|--------------|
+| Setup complexity | Medium | Simple |
+| Isolation | ✅ Isolated | ❌ Global |
+| Conflicts | ✅ No conflicts | ⚠️ May conflict |
+| Cleanup | ✅ Easy (delete folder) | ❌ Hard (manual uninstall) |
+| Best for | Development, multiple projects | Single project, testing |
+| Recommended | ✅ Yes | ⚠️ Only if needed |
 
 ---
 
@@ -232,7 +350,7 @@ npm run dev
 
 ## 🚀 Part 4: Running the Complete System
 
-### Method 1: Manual Start (Recommended for Development)
+### Method 1: Manual Start - WITH Virtual Environment
 
 **Terminal 1 - Backend:**
 ```cmd
@@ -247,17 +365,61 @@ cd path\to\fake-product-detection\frontend
 npm run dev
 ```
 
-### Method 2: One-Click Start (Automated)
+### Method 2: Manual Start - WITHOUT Virtual Environment
 
+**Terminal 1 - Backend:**
+```cmd
+cd path\to\fake-product-detection
+python scripts\utilities\run_backend.py
+```
+
+**Terminal 2 - Frontend:**
+```cmd
+cd path\to\fake-product-detection\frontend
+npm run dev
+```
+
+### Method 3: One-Click Start (Automated)
+
+**If using virtual environment:**
 ```cmd
 # From project root
 start-both.bat
 ```
 
-This script automatically:
-1. Starts backend in one terminal
-2. Starts frontend in another terminal
-3. Waits for both to be ready
+**If NOT using virtual environment:**
+
+You'll need to modify `start-both.bat` to skip venv activation. Create a new file `start-both-no-venv.bat`:
+
+```batch
+@echo off
+echo Starting Fake Product Detection System (No Virtual Environment)...
+echo.
+
+REM Start Backend
+echo Starting Backend...
+start "Backend Server" cmd /k "cd /d %~dp0 && python scripts\utilities\run_backend.py"
+
+REM Wait for backend to start
+timeout /t 10 /nobreak
+
+REM Start Frontend
+echo Starting Frontend...
+start "Frontend Server" cmd /k "cd /d %~dp0frontend && npm run dev"
+
+echo.
+echo System is starting...
+echo Backend: http://localhost:8000
+echo Frontend: http://localhost:3000
+echo.
+echo Press any key to exit this window (servers will keep running)
+pause
+```
+
+Then run:
+```cmd
+start-both-no-venv.bat
+```
 
 ---
 
@@ -288,11 +450,18 @@ Expected response:
 
 ### Test 3: Run Test Suite
 
+**With virtual environment:**
 ```cmd
 # Activate venv
 .venv\Scripts\activate
 
 # Run all tests
+python scripts\utilities\run_all_tests.py
+```
+
+**Without virtual environment:**
+```cmd
+# Run all tests directly
 python scripts\utilities\run_all_tests.py
 ```
 
@@ -337,9 +506,17 @@ const TIMEOUT = 30000; // 30 seconds
 ### Backend Issues
 
 **Problem: "ModuleNotFoundError"**
+
+**With venv:**
 ```cmd
 # Solution: Reinstall dependencies
 .venv\Scripts\activate
+pip install -r backend\requirements.txt
+```
+
+**Without venv:**
+```cmd
+# Solution: Reinstall dependencies globally
 pip install -r backend\requirements.txt
 ```
 
@@ -419,8 +596,14 @@ REDIS_URL = "redis://localhost:6379/0"
 
 ### 1. Train the Model
 
+**With venv:**
 ```cmd
 .venv\Scripts\activate
+python train.py
+```
+
+**Without venv:**
+```cmd
 python train.py
 ```
 
@@ -436,8 +619,14 @@ See: `guides/training/HOW_TO_ADD_REAL_IMAGES.md`
 
 ### 3. Run Tests
 
+**With venv:**
 ```cmd
 .venv\Scripts\activate
+python scripts\utilities\run_all_tests.py
+```
+
+**Without venv:**
+```cmd
 python scripts\utilities\run_all_tests.py
 ```
 
@@ -448,12 +637,24 @@ See: `guides/testing/TESTING_COMPLETE_GUIDE.md`
 ## 📝 Quick Reference
 
 ### Start System
+
+**With virtual environment:**
 ```cmd
 # One command
 start-both.bat
 
 # Or manually
 # Terminal 1: .venv\Scripts\activate && python scripts\utilities\run_backend.py
+# Terminal 2: cd frontend && npm run dev
+```
+
+**Without virtual environment:**
+```cmd
+# One command
+start-both-no-venv.bat
+
+# Or manually
+# Terminal 1: python scripts\utilities\run_backend.py
 # Terminal 2: cd frontend && npm run dev
 ```
 
@@ -477,10 +678,16 @@ start-both.bat
 
 ## ✅ Installation Complete!
 
-Your system is now ready to use. Start with:
+Your system is now ready to use.
 
+**With virtual environment:**
 ```cmd
 start-both.bat
+```
+
+**Without virtual environment:**
+```cmd
+start-both-no-venv.bat
 ```
 
 Then open: **http://localhost:3000**
