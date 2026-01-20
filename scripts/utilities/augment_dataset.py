@@ -14,9 +14,17 @@ from PIL import Image
 import random
 
 # Add backend to path
-sys.path.insert(0, str(Path(__file__).parent / 'backend' / 'src'))
+backend_src = str(Path(__file__).parent.parent.parent / 'backend' / 'src')
+if backend_src not in sys.path:
+    sys.path.insert(0, backend_src)
 
-from data_augmentation import ImageAugmentor
+try:
+    from data_augmentation import ImageAugmentor
+except ImportError:
+    print("⚠️  Warning: Could not import ImageAugmentor")
+    print("   Make sure you're in the project root directory")
+    print("   Or install dependencies: pip install -r backend/requirements.txt")
+    sys.exit(1)
 
 
 def augment_directory(input_dir: str, output_dir: str, num_augmentations: int = 10):

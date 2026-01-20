@@ -27,7 +27,10 @@ try:
 except ImportError:
     TF_AVAILABLE = False
 
-from src.classifier import ProductClassifier
+try:
+    from src.classifier import ProductClassifier
+except ImportError:
+    from classifier import ProductClassifier
 
 
 class ModelTrainer:

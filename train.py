@@ -16,8 +16,10 @@ Requirements:
 import sys
 from pathlib import Path
 
-# Add backend to path
-sys.path.insert(0, str(Path(__file__).parent / 'backend' / 'src'))
+# Add backend/src to path for imports
+backend_src = str(Path(__file__).parent / 'backend' / 'src')
+if backend_src not in sys.path:
+    sys.path.insert(0, backend_src)
 
 from classifier import ProductClassifier
 from train_model import ModelTrainer, create_data_generators
