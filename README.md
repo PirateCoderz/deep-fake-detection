@@ -1,4 +1,4 @@
-# How to Run
+# Deep Fake Detection
 
 ## Frontend
 
