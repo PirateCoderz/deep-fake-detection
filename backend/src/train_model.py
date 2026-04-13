@@ -27,10 +27,20 @@ try:
 except ImportError:
     TF_AVAILABLE = False
 
+# Import classifier - handle both import paths
 try:
-    from src.classifier import ProductClassifier
-except ImportError:
     from classifier import ProductClassifier
+except ImportError:
+    try:
+        from src.classifier import ProductClassifier
+    except ImportError:
+        import sys
+        from pathlib import Path
+        # Add backend/src to path if not already there
+        backend_src = str(Path(__file__).parent)
+        if backend_src not in sys.path:
+            sys.path.insert(0, backend_src)
+        from classifier import ProductClassifier
 
 
 class ModelTrainer:

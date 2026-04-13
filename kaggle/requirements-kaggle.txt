@@ -1,0 +1,4 @@
+# Kaggle GPU images usually include TensorFlow; pin if you add a custom venv.
+tensorflow>=2.15.0
+scikit-learn>=1.3.0
+numpy>=1.24.0

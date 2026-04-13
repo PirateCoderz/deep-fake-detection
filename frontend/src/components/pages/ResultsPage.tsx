@@ -18,6 +18,7 @@ import ClassificationBadge from '@/components/results/ClassificationBadge';
 import ConfidenceScore from '@/components/results/ConfidenceScore';
 import ExplanationsList from '@/components/results/ExplanationsList';
 import FeedbackForm from '@/components/results/FeedbackForm';
+import HeatmapViewer from '@/components/results/HeatmapViewer';
 import type { ClassificationResponse } from '@/types';
 
 interface ResultsPageProps {
@@ -145,8 +146,14 @@ export default function ResultsPage({ requestId }: ResultsPageProps) {
           </Paper>
         </Grid>
 
-        {/* Right Column - Explanations and Feedback */}
+        {/* Right Column - Heatmap, Explanations and Feedback */}
         <Grid item xs={12} md={6}>
+          <HeatmapViewer
+            heatmapBase64={result.heatmap_base64}
+            heatmapAvailable={result.heatmap_available}
+            label={result.label}
+          />
+
           <ExplanationsList explanations={result.explanations} />
 
           <Box sx={{ mt: 3 }}>

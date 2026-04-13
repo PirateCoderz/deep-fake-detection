@@ -8,6 +8,7 @@ export interface ClassificationResponse {
     Fake: number;
   };
   heatmap_available: boolean;
+  heatmap_base64: string | null;
   explanations: string[];
   low_confidence_warning: boolean;
   processing_time_ms: number;

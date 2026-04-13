@@ -234,3 +234,4 @@ credentials.json
 data/**/*.zip
 data/**/*.tar.gz
 data/**/*.rar
+/temp

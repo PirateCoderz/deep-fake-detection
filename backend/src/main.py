@@ -4,6 +4,8 @@ Main FastAPI application entry point.
 import os
 import time
 import uuid
+import base64
+import numpy as np
 from datetime import datetime, timedelta
 from typing import Optional
 from io import BytesIO
@@ -233,8 +235,13 @@ class ClassificationResponse(BaseModel):
         json_schema_extra={"example": {"Original": 0.87, "Fake": 0.13}}
     )
     heatmap_available: bool = Field(
-        description="Whether Grad-CAM heatmap was generated (only for Fake classifications)",
-        json_schema_extra={"example": False}
+        description="Whether Grad-CAM heatmap was generated",
+        json_schema_extra={"example": True}
+    )
+    heatmap_base64: Optional[str] = Field(
+        None,
+        description="Base64-encoded Grad-CAM heatmap overlay image (PNG format)",
+        json_schema_extra={"example": None}
     )
     explanations: list = Field(
         description="List of textual explanations for the classification",
@@ -260,7 +267,8 @@ class ClassificationResponse(BaseModel):
                 "label": "Original",
                 "confidence": 0.87,
                 "probabilities": {"Original": 0.87, "Fake": 0.13},
-                "heatmap_available": False,
+                "heatmap_available": True,
+                "heatmap_base64": None,
                 "explanations": [
                     "Logo shows clear, high-quality printing",
                     "Print quality indicates professional manufacturing",
@@ -610,13 +618,27 @@ async def classify_image(
     # Generate explanations
     explanations = []
     heatmap_available = False
+    heatmap_b64 = None
     
     if expl is not None:
         try:
-            # Generate heatmap for fake classifications
-            if result["label"].lower() == "fake":
-                heatmap = expl.generate_gradcam(preprocessed, class_index=0)
-                heatmap_available = heatmap is not None
+            # Generate Grad-CAM heatmap for ALL classifications
+            pred_class = 1 if result["label"].lower() == "fake" else 0
+            heatmap = expl.generate_gradcam(preprocessed, pred_class)
+            
+            if heatmap is not None:
+                heatmap_available = True
+                # Decode the original image for overlay
+                original_image, _ = prep.decode_image(contents)
+                if original_image is not None:
+                    import cv2
+                    # Resize original to match heatmap
+                    original_resized = cv2.resize(original_image, (224, 224))
+                    # Create overlay
+                    overlay = expl.overlay_heatmap(original_resized, heatmap)
+                    # Encode to base64 PNG
+                    _, buffer = cv2.imencode('.png', cv2.cvtColor(overlay.astype(np.uint8), cv2.COLOR_RGB2BGR))
+                    heatmap_b64 = base64.b64encode(buffer).decode('utf-8')
             
             # Extract features and generate explanations
             features = expl.extract_visual_features(preprocessed)
@@ -661,6 +683,7 @@ async def classify_image(
         confidence=result["confidence"],
         probabilities=result["probabilities"],
         heatmap_available=heatmap_available,
+        heatmap_base64=heatmap_b64,
         explanations=explanations,
         low_confidence_warning=low_confidence,
         processing_time_ms=processing_time
